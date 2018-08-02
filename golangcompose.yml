@@ -1,0 +1,10 @@
+version: "2"
+
+services:
+  golang:
+    image: golang:mygolang
+    ports:
+      - "8080:8080"
+    volumes:
+      - /myWork/golang/:/go/src/:rw
+    tty: true

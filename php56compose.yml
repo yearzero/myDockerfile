@@ -1,0 +1,44 @@
+version: '2'
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+      - "9501:9501"
+    volumes:
+      - /Users/cmha/workstation/g7/myDockerfile/conf/nginx/conf.d:/etc/nginx/conf.d/:ro
+      - /Users/cmha/workstation/g7/myDockerfile/conf/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /Users/cmha/workstation/g7/myDockerfile/log/nginx/:/var/log/nginx/:rw
+    links:
+      - php:fpm
+
+  php:
+    image: yearzero/php56:latest
+    expose:
+      - "9000"
+      - "9501"
+    volumes:
+      - /Users/cmha/workstation/g7/:/var/www/html/:rw
+      - /Users/cmha/workstation/g7/myDockerfile/conf/php/php.ini:/usr/local/etc/php/php.ini:ro
+      - /Users/cmha/workstation/g7/myDockerfile/conf/php/php-fpm.d/www.conf:/usr/local/etc/php-fpm.d/www.conf:rw
+      - /Users/cmha/workstation/g7/myDockerfile/log/php-fpm/:/var/log/php-fpm/:rw
+#    links:
+#      - mysql:mysql
+#      - redis:redis
+#
+#  mysql:
+#    image: mysql:latest
+#    ports:
+#      - "3306:3306"
+#    volumes:
+#      - /myWork/myDockerfile/conf/mysql/my.cnf:/etc/mysql/my.cnf:ro
+#      - /myWork/myDockerfile/mysql/:/var/lib/mysql/:rw
+#      - /myWork/myDockerfile/log/mysql/:/var/log/mysql/:rw
+#    environment:
+#      MYSQL_ROOT_PASSWORD: "123456"
+#
+#  redis:
+#    image: redis:latest
+#    ports:
+#      - "6379:6379"

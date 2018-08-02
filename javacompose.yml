@@ -1,0 +1,10 @@
+version: "2"
+
+services:
+  tomcat:
+    image: java:myjava8
+    ports:
+      - "8080:8080"
+    volumes:
+      - /myWork/java/:/data/web/:rw
+    tty: true

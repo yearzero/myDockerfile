@@ -1,0 +1,9 @@
+version: '2'
+services:
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - /Users/cmha/workstation/g7/myDockerfile/redis/data/:/data/:rw
+    command: redis-server --appendonly yes

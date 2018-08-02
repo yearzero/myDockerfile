@@ -1,0 +1,12 @@
+version: '2'
+services:
+  mysql:
+    image: mysql:5.7
+    ports:
+      - "3306:3306"
+    volumes:
+      - /Users/cmha/workstation/g7/myDockerfile/conf/mysql/my.cnf:/etc/mysql/my.cnf:ro
+      - /Users/cmha/workstation/g7/myDockerfile/mysql/data/:/var/lib/mysql/:rw
+      - /Users/cmha/workstation/g7/myDockerfile/log/mysql/:/var/log/mysql/:rw
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"

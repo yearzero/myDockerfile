@@ -1,0 +1,10 @@
+version: "2"
+
+services:
+  tomcat:
+    image: python:mypython27
+    ports:
+      - "8080:8080"
+    volumes:
+      - /myWork/python/:/data/web/:rw
+    tty: true
