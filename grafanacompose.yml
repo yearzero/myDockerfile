@@ -1,0 +1,11 @@
+version: "2"
+services:
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - /Users/cmha/workstation/g7/myDockerfile/conf/grafana/:/etc/grafana/:ro
+      - /Users/cmha/workstation/g7/myDockerfile/grafana/data/:/var/lib/grafana/:rw
+      - /Users/cmha/workstation/g7/myDockerfile/log/grafana/:/var/log/grafana/:rw
+    ports:
+      - 3000:3000
+    container_name: grafana

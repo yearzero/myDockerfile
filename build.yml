@@ -1,0 +1,38 @@
+version: '2'
+
+services:
+  php56:
+    build:
+      context: php/php56
+      dockerfile: Dockerfile
+    image: yearzero/php56:latest
+
+  php70:
+    build:
+      context: php/php70
+      dockerfile: Dockerfile
+    image: yearzero/php70:latest
+
+  php72:
+    build:
+      context: php/php72
+      dockerfile: Dockerfile
+    image: yearzero/php72:latest
+
+  go:
+    build:
+      context: golang
+      dockerfile: Dockerfile
+    image: golang:mygolang
+
+  java8:
+    build:
+      context: java
+      dockerfile: Dockerfile
+    image: java:myjava8
+
+  python27:
+    build:
+      context: python
+      dockerfile: Dockerfile
+    image: python:mypython27

@@ -2,22 +2,12 @@ FROM php:7.0-fpm
 
 COPY ./sources.list.stretch /etc/apt/sources.list
 
-# Extensions: ctype, dom, fileinfo, ftp, hash, iconv, json, pdo, pdo_sqlite, session,
-# tokenizer, simplexml, xml, xmlreader, xmlwriter and phar are bundled and compiled into
-# PHP by default. If missing, install them directly by `docker-php-ext-install extension_name`
-
-# Notice:
-# 1. Mcrypt was DEPRECATED in PHP 7.1.0, and REMOVED in PHP 7.2.0.
-# 2. opcache requires PHP version >= 7.0.0.
-# 3. soap requires libxml2-dev.
-# 4. xml, xmlrpc, wddx require libxml2-dev and libxslt-dev.
-# 5. Line `&& :\` is just for better reading and do nothing.
 RUN apt-get update \
-    && apt-get install -y libfreetype6-dev libjpeg62-turbo-dev libpng-dev libmagickwand-dev \
+    && apt-get install -y libfreetype6-dev libjpeg62-turbo-dev libmagickwand-dev libmcrypt-dev  \
     && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
     && docker-php-ext-install gd \
     && :\
-    && apt-get install -y libicu-dev \
+    && apt-get install -y libicu-dev libcurl4-openssl-dev \
     && docker-php-ext-install intl \
     && :\
     && apt-get install -y libxml2-dev \
@@ -45,6 +35,8 @@ RUN apt-get update \
     && docker-php-ext-install sysvsem \
     && docker-php-ext-install sysvshm \
     && docker-php-ext-install opcache \
+    && docker-php-ext-install mcrypt \
+    && docker-php-ext-install iconv \
     #&& docker-php-ext-install pdo_firebird \
     #&& docker-php-ext-install pdo_dblib \
     #&& docker-php-ext-install pdo_oci \
@@ -55,13 +47,8 @@ RUN apt-get update \
     #&& docker-php-ext-install odbc \
     #&& docker-php-ext-install dba \
     #&& docker-php-ext-install interbase \
-    #&& :\
-    #&& apt-get install -y libmcrypt-dev \
-    #&& docker-php-ext-install mcrypt \
-    #&& :\
     #&& apt-get install -y curl \
     #&& apt-get install -y libcurl3 \
-    #&& apt-get install -y libcurl4-openssl-dev \
     #&& docker-php-ext-install curl \
     #&& :\
     #&& apt-get install -y libreadline-dev \
@@ -96,29 +83,25 @@ RUN apt-get update \
     #&& apt-get install -y libldb-dev \
     #&& apt-get install -y libldap2-dev \
     #&& docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu \
-    #&& docker-php-ext-install ldap \
     && rm -rf /var/lib/apt/lists/*
 
-# Install extension using pecl
-# Notice: if pecl install get error
-#    `No releases available for package "pecl.php.net/xxx"`
-# or
-#    `Package "xxx" does not have REST xml available`
-# Please turn on proxy (The proxy IP may be docker host IP or others):
-#RUN pear config-set http_proxy http://XXXX
+# pecl 容易报错，自己下载安装，通过wget下载，统一在/usr/src这里下载
+RUN set -xe; \
+    fetchWget='wget'; \
+    downDir='/usr/src'; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends $fetchWget; \
+    mkdir -p $downDir;
 
-#protobuf
+# protobuf
 ENV PROTOBUF_DOWNLOADS_URL="https://github.com/allegro/php-protobuf/archive/master.zip"
 ENV PROTOBUF_DOWNLOADS_NAME="protobuf.zip"
 ENV PROTOBUF_DIR /usr/src/protobuf
 RUN set -xe; \
-    \
-    fetchDeps=' \
-        wget unzip \
-    '; \
+    fetchDeps='unzip'; \
     apt-get update; \
     apt-get install -y --no-install-recommends $fetchDeps; \
-    rm -rf /var/lib/apt/lists/*; \
+    cd $downDir; \
     wget -O $PROTOBUF_DOWNLOADS_NAME "$PROTOBUF_DOWNLOADS_URL"; \
     unzip $PROTOBUF_DOWNLOADS_NAME -d $PROTOBUF_DIR; \
     rm $PROTOBUF_DOWNLOADS_NAME ; \
@@ -130,9 +113,8 @@ RUN set -xe; \
     docker-php-ext-enable protobuf; \
     apt-get purge -y --auto-remove $fetchDeps;
 
+# redis、xdebug、memcache
 RUN # pecl install redis-3.1.4 \
-    #&& docker-php-ext-enable redis \
-    #&& :\
     pecl install xdebug-2.6.0alpha1 \
     && docker-php-ext-enable xdebug \
     && :\
@@ -143,9 +125,9 @@ RUN # pecl install redis-3.1.4 \
     && apt-get install -y libmemcached-dev zlib1g-dev \
     && pecl install memcached-3.0.4 \
     && docker-php-ext-enable memcached \
-    && rm -rf /var/lib/apt/lists/*
+    && echo "memcached.use_sasl=1" >> /usr/local/etc/php/conf.d/docker-php-ext-memcached.ini
 
-#rdkafka
+# rdkafka
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -yq \
         telnet \
@@ -154,44 +136,27 @@ RUN apt-get update \
         krb5-user \
         --no-install-recommends \
     && apt-get purge -y --auto-remove nginx \
-    && rm -rf /var/lib/apt/lists/* \
     && docker-php-ext-install -j$(nproc) pcntl
 
 ENV LIBRDKAFKA_DOWNLOADS_URL="https://github.com/edenhill/librdkafka/archive/v0.9.5.tar.gz"
 ENV LIBRDKAFKA_DIR /usr/src/librdkafka
 RUN set -xe; \
-    \
-    fetchDeps=' \
-        wget \
-    '; \
     apt-get update; \
-    apt-get install -y --no-install-recommends $fetchDeps; \
-    rm -rf /var/lib/apt/lists/*; \
-    \
-    mkdir -p /usr/src; \
-    cd /usr/src; \
-    \
+    cd $downDir; \
     mkdir -p $LIBRDKAFKA_DIR; \
     wget -O librdkafka.tar.gz "$LIBRDKAFKA_DOWNLOADS_URL"; \
     tar -zxvf librdkafka.tar.gz -C $LIBRDKAFKA_DIR --strip-components=1; \
-    \
     rm librdkafka.tar.gz ; \
     apt-get purge -y --auto-remove $fetchDeps;
 
 ENV RDKAFKA_DOWNLOADS_URL="http://pecl.php.net/get/rdkafka-3.0.3.tgz"
 ENV RDKAFKA_DOWNLOADS_NAME="rdkafka-3.0.3"
 RUN set -xe; \
-    \
-    buildDeps=' \
-        python wget \
-    '; \
-    \
+    buildDeps='python'; \
     pecl uninstall rdkafka;\
-    apt-get purge -y --auto-remove librdkafka-dev && rm -rf /var/lib/apt/lists/*;\
-    \
+    apt-get purge -y --auto-remove librdkafka-dev;\
     apt-get update; \
     apt-get install -y --no-install-recommends $buildDeps; \
-    \
     cd $LIBRDKAFKA_DIR;\
     ./configure; \
     sed -ri 's/^WITH_LDS.*/#WITH_LDS=y/g' $LIBRDKAFKA_DIR/Makefile.config; \
@@ -203,12 +168,47 @@ RUN set -xe; \
     cd $RDKAFKA_DOWNLOADS_NAME && phpize && ./configure && make && make install; \
     cd .. && rm -r $RDKAFKA_DOWNLOADS_NAME; \
     docker-php-ext-enable rdkafka; \
-    \
     apt-get purge -y --auto-remove $buildDeps; \
     rm -rf $LIBRDKAFKA_DIR;
 
+# gearman
+ENV GEARMAN_DOWNLOADS_NAME="gearman-2.0.5"
+ENV GEARMAN_DOWNLOADS_URL="https://github.com/wcgallego/pecl-gearman/archive/$GEARMAN_DOWNLOADS_NAME.tar.gz"
+RUN set -xe; \
+    apt-get install -y libgearman-dev --no-install-recommends; \
+    cd $downDir; \
+    mkdir $GEARMAN_DOWNLOADS_NAME; \
+    wget -O $GEARMAN_DOWNLOADS_NAME.tar.gz $GEARMAN_DOWNLOADS_URL; \
+    tar zxvf $GEARMAN_DOWNLOADS_NAME.tar.gz -C $GEARMAN_DOWNLOADS_NAME --strip-components=1; \
+    rm $GEARMAN_DOWNLOADS_NAME.tar.gz; \
+    cd $GEARMAN_DOWNLOADS_NAME && phpize && ./configure && make && make install; \
+    docker-php-ext-enable gearman; \
+    cd .. && rm -r $GEARMAN_DOWNLOADS_NAME;
+
 # Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin/ --filename=composer;
+
+# CodeSniffer
+RUN pear install PHP_CodeSniffer;
+
+# phpunit
+ENV PHPUNIT_DOWNLOADS_URL="https://phar.phpunit.de/phpunit-6.phar"
+RUN set -xe; \
+    cd $downDir; \
+    wget -O phpunit.phar "$PHPUNIT_DOWNLOADS_URL"; \
+    chmod +x phpunit.phar; \
+    mv phpunit.phar /usr/local/bin/phpunit;
+
+# ldap
+RUN apt-get install -yq \
+       libldb-dev \
+       libldap2-dev \
+       --no-install-recommends \
+   && ln -s /usr/lib/x86_64-linux-gnu/libldap.so /usr/lib/libldap.so \
+   && docker-php-ext-install -j$(nproc) ldap
+
+RUN apt-get update \
+    && apt-get install -y curl iputils-ping net-tools vim openbsd-inetd telnetd;
 
 # 清空缓存和无用的软件
 RUN set -xe; \

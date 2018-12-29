@@ -7,3 +7,4 @@ services:
     volumes:
       - /Users/cmha/workstation/g7/myDockerfile/redis/data/:/data/:rw
     command: redis-server --appendonly yes
+    container_name: reids

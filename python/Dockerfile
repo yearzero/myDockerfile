@@ -7,7 +7,9 @@ RUN pip install --upgrade pip \
     && pip install MySQL-python==1.2.3 \
     && pip install paramiko==1.16.0 \
     && pip install requests==2.18.4 \
-    && pip install robotframework==3.0.2
+    && pip install robotframework==3.0.2 \
+    && pip install httplib2 \
+    && pip install requests
 
 # install Django
 #RUN pip install Django==1.11

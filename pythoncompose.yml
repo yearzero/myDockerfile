@@ -5,6 +5,7 @@ services:
     image: python:mypython27
     ports:
       - "8080:8080"
+    container_name: python
     volumes:
-      - /myWork/python/:/data/web/:rw
+      - /Users/cmha/workstation/g7/python/:/data/web/:rw
     tty: true

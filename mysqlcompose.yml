@@ -10,3 +10,4 @@ services:
       - /Users/cmha/workstation/g7/myDockerfile/log/mysql/:/var/log/mysql/:rw
     environment:
       MYSQL_ROOT_PASSWORD: "123456"
+    container_name: mysql

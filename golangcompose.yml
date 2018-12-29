@@ -6,5 +6,6 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - /myWork/golang/:/go/src/:rw
+      - /Users/cmha/workstation/g7/golang/:/go/src/:rw
     tty: true
+    container_name: go

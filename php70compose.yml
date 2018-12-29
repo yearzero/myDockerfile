@@ -12,6 +12,10 @@ services:
       - /Users/cmha/workstation/g7/myDockerfile/log/nginx/:/var/log/nginx/:rw
     links:
       - php:fpm
+    container_name: nginx
+    networks:
+      default:
+        ipv4_address: 172.18.0.3
 
   php:
     image: yearzero/php70:latest
@@ -23,3 +27,17 @@ services:
       - /Users/cmha/workstation/g7/myDockerfile/conf/php/php.ini:/usr/local/etc/php/php.ini:ro
       - /Users/cmha/workstation/g7/myDockerfile/conf/php/php-fpm.d/www.conf:/usr/local/etc/php-fpm.d/www.conf:rw
       - /Users/cmha/workstation/g7/myDockerfile/log/php-fpm/:/var/log/php-fpm/:rw
+    container_name: php70
+    networks:
+      default:
+        ipv4_address: 172.18.0.2
+    extra_hosts:
+      - "lc.truck_manager_x.com:172.18.0.3"
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.18.0.0/16

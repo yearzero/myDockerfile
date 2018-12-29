@@ -2,17 +2,6 @@ FROM php:5.6-fpm
 
 COPY ./sources.list.jessie /etc/apt/sources.list
 
-# Extensions: ctype, dom, fileinfo, ftp, hash, iconv, json, pdo, pdo_sqlite, session,
-# tokenizer, simplexml, xml, xmlreader, xmlwriter and phar are bundled and compiled into
-# PHP by default. If missing, install them directly by `docker-php-ext-install extension_name`
-
-# Notice:
-# 1. Mcrypt was DEPRECATED in PHP 7.1.0, and REMOVED in PHP 7.2.0.
-# 2. opcache requires PHP version >= 7.0.0.
-# 3. soap requires libxml2-dev.
-# 4. xml, xmlrpc, wddx require libxml2-dev and libxslt-dev.
-# 5. Line `&& :\` is just for better reading and do nothing.
-
 RUN apt-get update \
     && apt-get install -y libfreetype6-dev libjpeg62-turbo-dev libpng-dev libmcrypt-dev \
         zlib1g-dev apt-utils \
@@ -103,14 +92,6 @@ RUN apt-get update \
     #&& docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu \
     #&& docker-php-ext-install ldap \
 
-# Install extension using pecl
-# Notice: if pecl install get error
-#    `No releases available for package "pecl.php.net/xxx"`
-# or
-#    `Package "xxx" does not have REST xml available`
-# Please turn on proxy (The proxy IP may be docker host IP or others):
-#RUN pear config-set http_proxy http://XXXX
-
 
 # pecl 容易报错，自己下载安装，通过wget下载，统一在/usr/src这里下载
 RUN set -xe; \
@@ -121,45 +102,21 @@ RUN set -xe; \
     apt-get install -y --no-install-recommends $fetchWget; \
     mkdir -p $downDir;
 
-#redis
-ENV REDIS_DOWNLOADS_NAME="redis-3.1.2"
-ENV REDIS_DOWNLOADS_URL="http://pecl.php.net/get/$REDIS_DOWNLOADS_NAME.tgz"
-RUN set -xe; \
-    cd $downDir; \
-    wget "$REDIS_DOWNLOADS_URL"; \
-    tar -zxvf $REDIS_DOWNLOADS_NAME.tgz; \
-    rm $REDIS_DOWNLOADS_NAME.tgz; \
-    cd $REDIS_DOWNLOADS_NAME && phpize && ./configure && make && make install; \
-    cd .. && rm -r $REDIS_DOWNLOADS_NAME; \
-    docker-php-ext-enable redis;
+# redis、xdebug、memcache
+RUN # pecl install redis-3.1.4 \
+    pecl install xdebug-2.6.0alpha1 \
+    && docker-php-ext-enable xdebug \
+    && :\
+    && apt-get install -y libmagickwand-dev \
+    && pecl install imagick-3.4.3 \
+    && docker-php-ext-enable imagick \
+    && :\
+    && apt-get install -y libmemcached-dev zlib1g-dev \
+    && pecl install memcached-3.0.4 \
+    && docker-php-ext-enable memcached \
+    && echo "memcached.use_sasl=1" >> /usr/local/etc/php/conf.d/docker-php-ext-memcached.ini
 
-#memcached
-ENV MEMCACHED_DOWNLOADS_NAME="memcached-2.2.0"
-ENV MEMCACHED_DOWNLOADS_URL="http://pecl.php.net/get/$MEMCACHED_DOWNLOADS_NAME.tgz"
-RUN set -xe; \
-    apt-get install -y libmemcached-dev --no-install-recommends; \
-    cd $downDir; \
-    wget "$MEMCACHED_DOWNLOADS_URL"; \
-    tar -zxvf $MEMCACHED_DOWNLOADS_NAME.tgz; \
-    rm $MEMCACHED_DOWNLOADS_NAME.tgz; \
-    cd $MEMCACHED_DOWNLOADS_NAME && phpize && ./configure && make && make install; \
-    cd .. && rm -r $MEMCACHED_DOWNLOADS_NAME; \
-    docker-php-ext-enable memcached;
-
-#memcache
-ENV MEMCACHE_DOWNLOADS_NAME="memcache-3.0.8"
-ENV MEMCACHE_DOWNLOADS_URL="http://pecl.php.net/get/$MEMCACHE_DOWNLOADS_NAME.tgz"
-RUN set -xe; \
-    apt-get install -y libmemcached-dev --no-install-recommends; \
-    cd $downDir; \
-    wget "$MEMCACHE_DOWNLOADS_URL"; \
-    tar -zxvf $MEMCACHE_DOWNLOADS_NAME.tgz; \
-    rm $MEMCACHE_DOWNLOADS_NAME.tgz; \
-    cd $MEMCACHE_DOWNLOADS_NAME && phpize && ./configure && make && make install; \
-    cd .. && rm -r $MEMCACHE_DOWNLOADS_NAME; \
-    docker-php-ext-enable memcache;
-
-#gearman
+# gearman
 ENV GEARMAN_DOWNLOADS_NAME="gearman-1.1.2"
 ENV GEARMAN_DOWNLOADS_URL="http://pecl.php.net/get/$GEARMAN_DOWNLOADS_NAME.tgz"
 RUN set -xe; \
@@ -172,7 +129,7 @@ RUN set -xe; \
     cd .. && rm -r $GEARMAN_DOWNLOADS_NAME; \
     docker-php-ext-enable gearman;
 
-#rdkafka
+# rdkafka
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -yq \
         telnet \
@@ -221,7 +178,7 @@ RUN set -xe; \
     apt-get purge -y --auto-remove $buildDeps; \
     rm -rf $LIBRDKAFKA_DIR;
 
-#ldap
+# ldap
 RUN apt-get update \
     && apt-get install -yq \
         libldb-dev \
@@ -233,6 +190,20 @@ RUN apt-get update \
 
 # Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin/ --filename=composer;
+
+# CodeSniffer
+RUN pear install PHP_CodeSniffer;
+
+# phpunit
+ENV PHPUNIT_DOWNLOADS_URL="https://phar.phpunit.de/phpunit-5.phar"
+RUN set -xe; \
+    cd $downDir; \
+    wget -O phpunit.phar "$PHPUNIT_DOWNLOADS_URL"; \
+    chmod +x phpunit.phar; \
+    mv phpunit.phar /usr/local/bin/phpunit;
+
+RUN apt-get update \
+    && apt-get install -y curl iputils-ping net-tools vim openbsd-inetd telnetd;
 
 # 清空缓存和无用的软件
 RUN set -xe; \
